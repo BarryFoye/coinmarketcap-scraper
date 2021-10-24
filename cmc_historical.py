@@ -4,7 +4,6 @@ First we need to generate the date in the YYYY-MM-DD format.
 It should start at 2013-04-28 and run to current day.
 
 TODO:
-    1. Write a function that will ingest the retrieved data into a database
     1. Write a function that would retrieve all data from 2013-04-28 onwards
     1. Write a function that will only trieve the last 7 days of data
 """
@@ -15,11 +14,15 @@ import json
 import logging
 from random import randint
 from time import sleep
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 # Import third-party modules
 import requests
-from bs4 import BeautifulSoup
+
+# Import local modules
+from data_model import session
+from data_model.models import Coin, Market, Platform, Quote, Tag, TagReference
+from helpers import get_proxies
 
 
 def get_data(url: str, /, **kwargs: Any) -> List[Dict[str, Any]]:
@@ -81,46 +84,98 @@ def get_data(url: str, /, **kwargs: Any) -> List[Dict[str, Any]]:
     return content
 
 
-def get_proxy() -> Optional[List[dict]]:
+def ingest_data(data: List[dict]) -> None:
     """
-    Scrape proxy server information from https://www.sslproxies.org.
+    Ingest data into the database.
+
+    Parameters
+    ----------
+        data : List[dict]
+            JSON-like response from the "coinmarketcap" server.
 
     Returns
     -------
-        List[dict]
-            List of proxy servers.
-
         NoneType
-            If failed to retrieve a response from the website.
     """
-    # Declare variables
-    url = "https://www.sslproxies.org"
+    for entry in data:
+        market = Market(
+            num_market_pairs=entry["num_market_pairs"],
+            date_added=entry["date_added"],
+            max_supply=entry["max_supply"],
+            circulating_supply=entry["circulating_supply"],
+            total_supply=entry["total_supply"],
+            cmc_rank=entry["cmc_rank"],
+            last_updated=entry["last_updated"],
+        )
 
-    # Request proxies
-    payload = requests.get(url)
+        if not session.query(Coin).filter(Coin.id == entry["id"]).first():
+            coin = Coin(
+                id=entry["id"],
+                name=entry["name"].lower(),
+                symbol=entry["symbol"].lower(),
+                slug=entry["slug"].lower(),
+            )
+            market.coins = coin
+            session.add(coin)
+        else:
+            market.coin_id = entry["id"]
 
-    # Validate response
-    content = b""
-    if payload.ok:
-        content = payload.content
+        if entry.get("tags"):
+            for tag_data in entry["tags"]:
+                tag = Tag()
 
-    # Parse HTML
-    soup = None
-    if content:
-        soup = BeautifulSoup(content, "html.parser")
+                tag_reference_query = session.query(TagReference) \
+                    .filter(TagReference.name == tag_data.lower()) \
+                    .first()
+                if not tag_reference_query:
+                    tag_reference = TagReference(name=tag_data.lower())
+                    tag.tags = tag_reference
+                    session.add(tag_reference)
+                else:
+                    tag.tag_id = tag_reference_query.id
 
-    if soup:
-        header = [
-            value.text for value in soup.table.thead.tr.findAll("th")
-        ]
-        body = [
-            [tag.text for tag in value.findAll("td")]
-            for value in soup.table.tbody.findAll("tr")
-        ]
+                market.tags.add(tag)
+                session.add(tag)
 
-        return [dict(zip(header, row)) for row in body]
+        if entry.get("platform"):
+            platform = Platform(
+                token_address=entry["platform"]["token_address"].encode(),
+            )
 
-    return None
+            if not session.query(Coin) \
+                    .filter(Coin.id == entry["platform"]["id"]).first():
+                currency = Coin(
+                    id=entry["platform"]["id"],
+                    name=entry["platform"]["name"].lower(),
+                    symbol=entry["platform"]["symbol"].lower(),
+                    slug=entry["platform"]["slug"].lower(),
+                )
+                platform.coins = currency
+                session.add(currency)
+            else:
+                platform.coin_id = entry["platform"]["id"]
+
+            market.platforms = platform
+            session.add(platform)
+
+        if entry.get("quote"):
+            for key, value in entry["quote"].items():
+                quote = Quote(
+                    currency=key,
+                    price=value["price"],
+                    vol_24=value["volume_24h"],
+                    pct_change_1h=value["percent_change_1h"],
+                    pct_change_24h=value["percent_change_24h"],
+                    pct_change_7d=value["percent_change_7d"],
+                    market_cap=value["market_cap"],
+                    fully_diluted_mc=value.get("fully_diluted_market_cap"),
+                    last_updated=value["last_updated"]
+                )
+                market.quotes.add(quote)
+                session.add(quote)
+
+        session.add(market)
+        session.commit()
 
 
 if __name__ == "__main__":
@@ -150,7 +205,7 @@ if __name__ == "__main__":
         "limit": LIMIT,
         "start": START,
     }
-    proxies_list = get_proxy()
+    proxies_list = get_proxies()
     proxies = [
         {"http": f"https://{proxy['IP Address']}:{proxy['Port']}"}
         for proxy in proxies_list
@@ -162,12 +217,22 @@ if __name__ == "__main__":
         "proxy": proxy,
     }
 
+    # Extract data
     try:
-        data = get_data(URL, params=parameters, proxies=proxy)
+        currency_data = get_data(URL, params=parameters, proxies=proxy)
     except requests.models.HTTPError:
         message["status"] = "failure"
         logging.warning(message, exc_info=True)
     else:
         message["status"] = "success"
         logging.info("%s", json.dumps(message, indent=2))
-        print(data)  # TODO: Replace this with data the ingestion function
+
+        # Ingest data
+        try:
+            ingest_data(currency_data)
+        except Exception:
+            err = f"failed data ingestion for {QUERY_DATE}"
+            logging.warning(err, exc_info=True)
+        else:
+            msg = f"ingestion for {QUERY_DATE} is complete"
+            logging.info(msg)
