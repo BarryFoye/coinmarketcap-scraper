@@ -20,9 +20,11 @@ from typing import Any, Dict, List
 import requests
 
 # Import local modules
-from data_model import session
-from data_model.models import Coin, Market, Platform, Quote, Tag, TagReference
-from helpers import get_proxies
+from cmc_data.data_model import session
+from cmc_data.data_model.models import (
+    Coin, Market, Platform, Quote, Tag, TagReference,
+)
+from cmc_data.helpers import get_proxies
 
 
 def get_data(url: str, /, **kwargs: Any) -> List[Dict[str, Any]]:

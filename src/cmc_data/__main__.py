@@ -79,7 +79,7 @@ def populate_history() -> None:
                 err = f"failed data ingestion for {query_date}"
                 logging.warning(err, exc_info=True)
             else:
-                msg = f"ingestion for {query_date} is complete"
+                msg = f"ingestion for {query_date} is complete."
                 logging.info(msg)
 
         query_date += dt.timedelta(7)

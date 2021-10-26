@@ -1,4 +1,4 @@
-"""TODO: Add description."""
+"""Command line interface for data model manipulations."""
 
 # Import standard modules
 from typing import Optional
@@ -22,12 +22,22 @@ def cli():
 
 
 @cli.command("init-db")
-@click.option("--drivername", help="Driver/libraries to use for the database.")
-@click.option("--username", help="Username to authenticate with the database.")
-@click.option("--password", help="Password to authenticate with the database.")
-@click.option("--host", help="The name of the host machine, i.e. IP or URL.")
-@click.option("--port", help="The port on which to connect to the database.")
-@click.option("--database", help="The name of the database.")
+@click.option(
+    "-D", "--drivername", help="Driver/libraries to use for the database.",
+)
+@click.option(
+    "-U", "--username", help="Username to authenticate with the database.",
+)
+@click.option(
+    "-W", "--password", help="Password to authenticate with the database.",
+)
+@click.option(
+    "-h", "--host", help="The name of the host machine, i.e. IP or URL.",
+)
+@click.option(
+    "-p", "--port", help="The port on which to connect to the database.",
+)
+@click.option("-d", "--database", help="The name of the database.")
 def init_db(
     drivername: Optional[str] = None,
     username: Optional[str] = None,

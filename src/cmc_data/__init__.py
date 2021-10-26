@@ -13,8 +13,10 @@ from typing import Any, Dict, List
 import requests
 
 # Import local modules
-from data_model import session
-from data_model.models import Coin, Market, Platform, Quote, Tag, TagReference
+from cmc_data.data_model import session
+from cmc_data.data_model.models import (
+    Coin, Market, Platform, Quote, Tag, TagReference,
+)
 
 
 def get_data(url: str, /, **kwargs: Any) -> List[Dict[str, Any]]:
@@ -174,3 +176,6 @@ def ingest_data(data: List[dict]) -> None:
         else:
             session.add(market)
             session.commit()
+
+
+del Any, Dict, List  # Clean up

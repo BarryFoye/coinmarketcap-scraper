@@ -116,7 +116,6 @@ class Market(Base):
     )
     num_market_pairs = Column(Integer)
     date_added = Column(DateTime, nullable=False)
-    # max_supply = Column(BigInteger)
     max_supply = Column(BIGINT)
     circulating_supply = Column(Float)
     total_supply = Column(Float)
