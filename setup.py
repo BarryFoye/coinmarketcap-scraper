@@ -29,7 +29,7 @@ setuptools.setup(
         "SQLAlchemy>=1.4.26",
         "click>=8.0.3",
         "python-dotenv>=0.19.1",
-        "psycopg2>=2.9.1",
+        "psycopg2-binary>=2.9.1",
         "requests>=2.26.0",
         "urllib3>=1.26.7",
     ],

@@ -15,7 +15,7 @@ from sqlalchemy.orm import sessionmaker
 __author__ = "Vitali Lupusor"
 
 # Load environment variables from the `.env` file
-load_dotenv(path.join(next(iter(__path__)), ".env"))
+load_dotenv(path.join(next(iter(__path__)), ".env"))  # type: ignore
 del load_dotenv, path  # Clean up
 
 # Instantiate database configuration object

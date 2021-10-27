@@ -5,9 +5,11 @@ Scrape data from https://coinmarketcap.com and populate the database.
 """
 
 # Import standard modules
+import json
 import logging
+import datetime
 from time import sleep
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Union
 
 # Import third-party modules
 import requests
@@ -17,6 +19,7 @@ from cmc_data.data_model import session
 from cmc_data.data_model.models import (
     Coin, Market, Platform, Quote, Tag, TagReference,
 )
+from cmc_data.helpers import validate_date_input
 
 
 def get_data(url: str, /, **kwargs: Any) -> List[Dict[str, Any]]:
@@ -178,4 +181,80 @@ def ingest_data(data: List[dict]) -> None:
             session.commit()
 
 
-del Any, Dict, List  # Clean up
+def populate(
+    date: Union[str, datetime.date, datetime.datetime],
+    proxy: Optional[dict] = None
+) -> None:
+    """
+    Extract data from source and ingest into the data model.
+
+    Parameters
+    ----------
+        date : str, datetime.date, datetime.datetime
+            The date for which to retrieve the data.
+
+        proxy : dict, NoneType
+            Proxy server. Default `None`.
+
+    Returns
+    -------
+        NoneType
+
+    Raises
+    ------
+        TypeError
+            * If input parameters of incorrect type.
+
+        ValueError
+            * If `date` is prior to 2013-04-28.
+    """
+    # Validate parameters
+    _date = validate_date_input(date)
+
+    # Declare variables
+    server = "https://web-api.coinmarketcap.com"
+    endpoint = "/v1/cryptocurrency/listings/historical"
+    url_coinmarketcap = server + endpoint
+    convert = "USD,USD,BTC"
+    limit = 5000
+    start = 1
+
+    # Configure request parameters
+    parameters = {
+        "convert": convert,
+        "date": _date,
+        "limit": limit,
+        "start": start,
+    }
+
+    # Configure default logging message
+    message = {
+        "url": url_coinmarketcap,
+        "parameters": parameters,
+        "proxy": proxy,
+    }
+
+    # Extract data
+    try:
+        currency_data = get_data(
+            url_coinmarketcap, params=parameters, proxies=proxy,
+        )
+    except requests.models.HTTPError:
+        message["status"] = "failure"
+        logging.warning(message, exc_info=True)
+    else:
+        message["status"] = "success"
+        logging.info("%s", json.dumps(message, indent=2))
+
+        # Ingest data
+        try:
+            ingest_data(currency_data)
+        except Exception:
+            err = f"failed data ingestion for {_date:%Y-%m-%d}"
+            logging.warning(err, exc_info=True)
+        else:
+            msg = f"ingestion for {_date:%Y-%m-%d} is complete."
+            logging.info(msg)
+
+
+del Any, Dict, List, Union, datetime  # Clean up
