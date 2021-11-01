@@ -27,9 +27,17 @@ class Coin(Base):
     __tablename__ = "coin"
 
     id = Column(Integer, primary_key=True, autoincrement=False, index=True)
-    name = Column(String, nullable=False, unique=False)
-    symbol = Column(String, nullable=False, unique=False)
-    slug = Column(String, nullable=False, unique=True)
+    name = Column(
+        String, nullable=False, unique=False, comment="Currency name",
+    )
+    symbol = Column(
+        String, nullable=False, unique=False, comment="Currency symbol",
+    )
+    slug = Column(String, nullable=False, unique=True, comment="")
+    max_supply = Column(BIGINT, comment="")
+    date_added = Column(
+        DateTime, nullable=False, comment="Date when added to the market",
+    )
     market = relationship("Market")
 
 
@@ -41,17 +49,17 @@ class Market(Base):
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     coin_id = Column(
         Integer, ForeignKey("coin.id"), index=True, nullable=False,
+        comment="Foreign key for the 'coin' table",
     )
     platform_id = Column(
         Integer, ForeignKey("platform.id"), index=True,
+        comment="Foreign key for the 'platform' table",
     )
-    num_market_pairs = Column(Integer)
-    date_added = Column(DateTime, nullable=False)
-    max_supply = Column(BIGINT)
-    circulating_supply = Column(Float)
-    total_supply = Column(Float)
-    cmc_rank = Column(Integer)
-    last_updated = Column(DateTime)
+    num_market_pairs = Column(Integer, comment="")
+    circulating_supply = Column(Float, comment="")
+    total_supply = Column(Float, comment="")
+    cmc_rank = Column(Integer, comment="")
+    last_updated = Column(DateTime, comment="")
     tags = relationship(
         "Tag",
         secondary=coin_tag,
@@ -81,7 +89,7 @@ class TagReference(Base):
     __tablename__ = "tag_ref"
 
     id = Column(Integer, autoincrement=True, primary_key=True, index=True)
-    name = Column(String, nullable=False, unique=True)
+    name = Column(String, nullable=False, unique=True, comment="Tag name")
     tags = relationship("Tag")
 
 
@@ -93,6 +101,7 @@ class Tag(Base):
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     tag_id = Column(
         Integer, ForeignKey("tag_ref.id"), index=True, nullable=False,
+        comment="Foreign key for 'tag_ref' table",
     )
     market = relationship(
         "Market",
@@ -113,7 +122,10 @@ class Platform(Base):
     coin_id = Column(
         Integer, ForeignKey("coin.id"), index=True, nullable=False,
     )
-    token_address = Column(LargeBinary)
+    token_address = Column(
+        LargeBinary, nullable=False, unique=True,
+        comment="Unique token address",
+    )
     coins = relationship("Coin")
     market = relationship("Market")
 
@@ -124,16 +136,18 @@ class Quote(Base):
     __tablename__ = "quote"
 
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    market_id = Column(Integer, ForeignKey("market.id"), index=True)
-    currency = Column(String)
-    price = Column(Float, nullable=False)
-    vol_24 = Column(Float)
-    pct_change_1h = Column(Float)
-    pct_change_24h = Column(Float)
-    pct_change_7d = Column(Float)
-    market_cap = Column(Float)
-    fully_diluted_mc = Column(Float)
-    last_updated = Column(DateTime, nullable=False)
+    market_id = Column(
+        Integer, ForeignKey("market.id"), index=True, nullable=False,
+    )
+    currency = Column(String, nullable=False, comment="Name of the currency")
+    price = Column(Float, nullable=False, comment="")
+    vol_24 = Column(Float, comment="")
+    pct_change_1h = Column(Float, comment="")
+    pct_change_24h = Column(Float, comment="")
+    pct_change_7d = Column(Float, comment="")
+    market_cap = Column(Float, comment="")
+    fully_diluted_mc = Column(Float, comment="")
+    last_updated = Column(DateTime, nullable=False, comment="")
     market = relationship(
         "Market",
         back_populates="quotes",

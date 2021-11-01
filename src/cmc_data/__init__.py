@@ -98,8 +98,6 @@ def ingest_data(data: List[dict]) -> None:
         try:
             market = Market(
                 num_market_pairs=entry["num_market_pairs"],
-                date_added=entry["date_added"],
-                max_supply=entry["max_supply"],
                 circulating_supply=entry["circulating_supply"],
                 total_supply=entry["total_supply"],
                 cmc_rank=entry["cmc_rank"],
@@ -112,6 +110,8 @@ def ingest_data(data: List[dict]) -> None:
                     name=entry["name"].lower(),
                     symbol=entry["symbol"].lower(),
                     slug=entry["slug"].lower(),
+                    date_added=entry["date_added"],
+                    max_supply=entry["max_supply"],
                 )
                 market.coins = coin
                 session.add(coin)
@@ -244,6 +244,7 @@ def populate(
         logging.warning(message, exc_info=True)
     else:
         message["status"] = "success"
+        message["parameters"]["date"] = str(message["parameters"]["date"])
         logging.info("%s", json.dumps(message, indent=2))
 
         # Ingest data
@@ -257,4 +258,4 @@ def populate(
             logging.info(msg)
 
 
-del Any, Dict, List, Union, datetime  # Clean up
+del Any, Dict, List, datetime  # Clean up

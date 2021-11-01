@@ -109,7 +109,8 @@ def validate_date_input(
             "one of the following: [<class str>, <class datetime.datetime>]"
         ))
 
-    if not datetime.datetime(2013, 4, 28) < _date < datetime.datetime.today():
+    if not datetime.datetime(2013, 4, 28).date() <= _date \
+            < datetime.datetime.today().date():
         raise ValueError((
             "`date` parameter should be greater than 2013-04-28 and less than "
             "date at runtime"

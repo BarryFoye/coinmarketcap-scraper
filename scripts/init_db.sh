@@ -1,9 +1,9 @@
-#!/bin/bash
+#!/bin/sh
 
 # Activate environment
-if [ -d venv ]
+if [ -d ${WORKDIR}/venv ] && [ -z ${VIRTUAL_ENV+x} ]
 then
-    source ./venv/bin/activate
+    source ${WORKDIR}/venv/bin/activate
 fi
 
 # Initialise the data model

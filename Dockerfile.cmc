@@ -1,0 +1,38 @@
+FROM python:alpine AS builder
+
+ENV WORKDIR /opt/coinmarketcap
+
+WORKDIR ${WORKDIR}
+COPY . ${WORKDIR}
+
+# Install psql
+RUN apk update
+RUN apk upgrade
+RUN apk add postgresql-dev build-base
+
+RUN python -m venv venv
+RUN source ./venv/bin/activate \
+    && python -m pip install --no-cache --upgrade pip wheel build \
+    && python -m pip install --no-cache -r ./requirements.txt \
+    && python -m build \
+    && python -m pip install .
+
+FROM python:alpine AS prod
+
+ENV WORKDIR /opt/coinmarketcap
+WORKDIR ${WORKDIR}
+
+COPY --from=builder ${WORKDIR}/venv ${WORKDIR}/venv
+COPY ./scripts ./scripts
+COPY ./src/cmc_data/data_model/.env ./src/cmc_data/data_model/.env
+
+# Install psql
+RUN apk update
+RUN apk upgrade
+RUN apk add postgresql-dev build-base
+
+EXPOSE 5432
+
+# ENTRYPOINT ./venv/bin/activate && python
+ENTRYPOINT [ "/bin/sh" ]
+CMD [ "/opt/coinmarketcap/scripts/populate_latest.sh" ]

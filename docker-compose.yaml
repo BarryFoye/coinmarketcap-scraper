@@ -1,18 +1,31 @@
+version: "3"
+
 services:
   db:
-    image: postgres
+    image: postgres:alpine
     volumes:
-      - ./data/db:/var/lib/postgresql/data
+      - ${DB_STORAGE}:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=${DB_NAME}
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
     ports:
       - "5432:5432"
+    # networks:
+    #   - bridge
 
-  data_model:
-    build: .
-    volumes:
-      - ./src:/opt/coinmarketcap
+  init:
+    build:
+      context: .
+      dockerfile: Dockerfile.init
+    environment:
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=db
+      - DB_PORT=${DB_PORT}
+      - DB_DRIVER=${DB_DRIVER}
     depends_on:
       - db
+    # networks:
+    #   - bridge

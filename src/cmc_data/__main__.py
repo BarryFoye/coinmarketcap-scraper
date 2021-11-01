@@ -19,7 +19,7 @@ def cli():
     ...
 
 
-@cli.command()
+@cli.command("populate-historical")
 def populate_historical() -> None:
     """Populate the database with data starting from 2013-04-28."""
     # Declare variables
@@ -32,14 +32,14 @@ def populate_historical() -> None:
         for proxy in proxies_list
     ] if proxies_list else []
 
-    # Extract historical data and populate talbes
-    while query_date < dt.datetime.today():
-        proxy = proxies[randint(0, len(proxies))] if proxies else {}
+    # Extract historical data and populate tables
+    while query_date < dt.datetime.today().date():
+        proxy = proxies[randint(0, len(proxies)-1)] if proxies else {}
         populate(query_date, proxy)
         query_date += dt.timedelta(7)
 
 
-@cli.command()
+@cli.command("populate-latest")
 def populate_latest() -> None:
     """Populate the database with the latest data."""
     # Declare variables
