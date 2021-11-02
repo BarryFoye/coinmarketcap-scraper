@@ -24,7 +24,6 @@ WORKDIR ${WORKDIR}
 
 COPY --from=builder ${WORKDIR}/venv ${WORKDIR}/venv
 COPY ./scripts ./scripts
-COPY ./src/cmc_data/data_model/.env ./src/cmc_data/data_model/.env
 
 # Install psql
 RUN apk update
