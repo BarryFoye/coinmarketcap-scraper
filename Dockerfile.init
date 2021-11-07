@@ -24,15 +24,11 @@ WORKDIR ${WORKDIR}
 
 COPY --from=builder ${WORKDIR}/venv ${WORKDIR}/venv
 COPY ./scripts ./scripts
-COPY ./src/cmc_data/data_model/.env ./src/cmc_data/data_model/.env
 
 # Install psql
 RUN apk update
 RUN apk upgrade
 RUN apk add postgresql-dev build-base
 
-EXPOSE 5432
-
-# ENTRYPOINT ./venv/bin/activate && python
 ENTRYPOINT [ "/bin/sh" ]
 CMD [ "/opt/coinmarketcap/scripts/init_db.sh" ]

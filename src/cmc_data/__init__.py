@@ -118,9 +118,30 @@ def ingest_data(data: List[dict]) -> None:
             else:
                 market.coin_id = entry["id"]
 
+            if entry.get("platform"):
+                if not session.query(Coin) \
+                        .filter(Coin.id == entry["platform"]["id"]).first():
+                    currency = Coin(
+                        id=entry["platform"]["id"],
+                        name=entry["platform"]["name"].lower(),
+                        symbol=entry["platform"]["symbol"].lower(),
+                        slug=entry["platform"]["slug"].lower(),
+                    )
+                    session.add(currency)
+
+                if not session.query(Platform) \
+                        .filter(Platform.id == entry["id"]).first():
+                    platform = Platform(
+                        id=entry["id"],
+                        platform_id=entry["platform"]["id"],
+                        token_address=entry["platform"]["token_address"]
+                        .encode(),
+                    )
+                    session.add(platform)
+
             if entry.get("tags"):
                 for tag_data in entry["tags"]:
-                    tag = Tag()
+                    tag = Tag(coin_id=entry["id"])
 
                     tag_reference_query = session.query(TagReference) \
                         .filter(TagReference.name == tag_data.lower()) \
@@ -132,47 +153,26 @@ def ingest_data(data: List[dict]) -> None:
                     else:
                         tag.tag_id = tag_reference_query.id
 
-                    market.tags.add(tag)
                     session.add(tag)
-
-            if entry.get("platform"):
-                platform = Platform(
-                    token_address=entry["platform"]["token_address"].encode(),
-                )
-
-                if not session.query(Coin) \
-                        .filter(Coin.id == entry["platform"]["id"]).first():
-                    currency = Coin(
-                        id=entry["platform"]["id"],
-                        name=entry["platform"]["name"].lower(),
-                        symbol=entry["platform"]["symbol"].lower(),
-                        slug=entry["platform"]["slug"].lower(),
-                    )
-                    platform.coins = currency
-                    session.add(currency)
-                else:
-                    platform.coin_id = entry["platform"]["id"]
-
-                market.platforms = platform
-                session.add(platform)
 
             if entry.get("quote"):
                 for key, value in entry["quote"].items():
                     quote = Quote(
+                        coin_id=entry["id"],
                         currency=key,
-                        price=value["price"],
-                        vol_24=value["volume_24h"],
-                        pct_change_1h=value["percent_change_1h"],
-                        pct_change_24h=value["percent_change_24h"],
-                        pct_change_7d=value["percent_change_7d"],
-                        market_cap=value["market_cap"],
+                        price=value.get("price"),
+                        vol_24=value.get("volume_24h"),
+                        pct_change_1h=value.get("percent_change_1h"),
+                        pct_change_24h=value.get("percent_change_24h"),
+                        pct_change_7d=value.get("percent_change_7d"),
+                        market_cap=value.get("market_cap"),
                         fully_diluted_mc=value.get("fully_diluted_market_cap"),
-                        last_updated=value["last_updated"]
+                        last_updated=value.get("last_updated")
                     )
-                    market.quotes.add(quote)
                     session.add(quote)
 
         except Exception:
+            session.rollback()
             logging.warning(
                 "entry failed validation: %s", entry, exc_info=True,
             )
@@ -228,7 +228,7 @@ def populate(
     }
 
     # Configure default logging message
-    message = {
+    message: dict = {
         "url": url_coinmarketcap,
         "parameters": parameters,
         "proxy": proxy,
