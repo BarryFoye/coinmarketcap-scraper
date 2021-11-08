@@ -28,9 +28,7 @@ class Coin(Base):
     slug = Column(VARCHAR(50), nullable=False, unique=True, comment="")
     max_supply = Column(BIGINT, comment="")
     date_added = Column(DateTime, comment="Date when added to the market")
-    coins = relationship("Platform")
     market = relationship("Market")
-    platforms = relationship("Platform")
     quotes = relationship("Quote")
     tags = relationship("Tag")
 
@@ -62,31 +60,9 @@ class Platform(Base):
 
     __tablename__ = "platform"
 
-    id = Column(
-        Integer,
-        ForeignKey("coin.id"),
-        primary_key=True,
-        autoincrement=False,
-    )
-    platform_id = Column(
-        Integer,
-        ForeignKey("coin.id"),
-        index=True,
-        nullable=False,
-    )
+    id = Column(Integer, primary_key=True, autoincrement=False)
+    platform_id = Column(Integer, index=True, nullable=False)
     token_address = Column(LargeBinary, unique=True, comment="")
-    coins = relationship(
-        "Coin",
-        back_populates="coins",
-        collection_class=set,
-        foreign_keys=[id],
-    )
-    platforms = relationship(
-        "Coin",
-        back_populates="platforms",
-        collection_class=set,
-        foreign_keys=[platform_id],
-    )
 
 
 class Quote(Base):
